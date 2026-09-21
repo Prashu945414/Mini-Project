@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}ChatHub{% endblock %}
+
+{% block content %}
+<div class="login-page">
+    <div class="login-card">
+        <div class="login-aura"></div>
+        <div class="brand">ChatHub</div>
+        <h1>Private conversations.</h1>
+        <p class="subtitle">Simple real-time messaging with encrypted message storage.</p>
+
+        <form method="POST">
+            <label>Username</label>
+            <input type="text" name="username" placeholder="Enter your username" autocomplete="off" maxlength="24" required>
+            <button type="submit">Continue</button>
+        </form>
+
+        <p class="security-note">Messages are encrypted before they are stored.</p>
+    </div>
+</div>
+{% endblock %}

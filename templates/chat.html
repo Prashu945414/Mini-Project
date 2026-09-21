@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}{{ other_user }} · ChatHub{% endblock %}
+
+{% block content %}
+<div class="app-shell">
+    <div class="sidebar-backdrop"></div>
+    <aside class="sidebar">
+        <div class="sidebar-top">
+            <a class="brand" href="{{ url_for('chat.home') }}">ChatHub</a>
+            <a class="logout" href="{{ url_for('chat.logout') }}">Logout</a>
+        </div>
+
+        <div class="profile">
+            <div class="avatar">{{ user[0]|upper }}</div>
+            <div>
+                <strong>{{ user }}</strong>
+                <span>Online</span>
+            </div>
+        </div>
+
+        <div class="section-label">CHATS</div>
+
+        <div class="user-list">
+            {% for contact in contacts %}
+            <a href="{{ url_for('chat.chat_page', username=contact.username) }}"
+               class="user-row {% if contact.username == other_user %}active{% endif %}">
+                <div class="avatar small presence {{ 'is-online' if contact.online else 'is-offline' }}" data-username="{{ contact.username }}">
+                    {{ contact.username[0]|upper }}
+                    <span class="presence-dot"></span>
+                </div>
+                <div class="user-info">
+                    <div class="user-info-top">
+                        <strong>{{ contact.username }}</strong>
+                        <span class="user-time">{{ contact.time }}</span>
+                    </div>
+                    <span class="user-preview">{{ contact.preview }}</span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </aside>
+
+    <main class="chat-panel">
+        <header class="chat-header">
+            <button class="menu-toggle" aria-label="Open conversations">&#9776;</button>
+            <div class="avatar presence {{ 'is-online' if other_user_online else 'is-offline' }}" data-username="{{ other_user }}">
+                {{ other_user[0]|upper }}
+                <span class="presence-dot"></span>
+            </div>
+            <div class="chat-person" data-username="{{ other_user }}">
+                <strong>{{ other_user }}</strong>
+                <span id="status" data-status-label>{{ 'Online' if other_user_online else 'Offline' }}</span>
+            </div>
+        </header>
+
+        <section class="messages" id="messages">
+            {% for msg in messages %}
+            <div class="message-row {% if msg.sender == user %}mine{% endif %}">
+                <div class="message-bubble">
+                    <span class="message-text">{{ msg.message }}</span>
+                    <span class="message-meta">{{ msg.time }}</span>
+                </div>
+            </div>
+            {% else %}
+            <div class="messages-empty">
+                <p>No messages yet — say hi to {{ other_user }} &#128075;</p>
+            </div>
+            {% endfor %}
+        </section>
+
+        <form id="message-form" class="message-form">
+            <input id="message-input" type="text" placeholder="Type a message" autocomplete="off" maxlength="2000">
+            <button type="submit">Send</button>
+        </form>
+    </main>
+</div>
+
+<script>
+const socket = window.chatSocket;
+const currentUser = {{ user|tojson }};
+const otherUser = {{ other_user|tojson }};
+
+socket.emit("join_chat", { other_user: otherUser });
+
+const messages = document.getElementById("messages");
+const form = document.getElementById("message-form");
+const input = document.getElementById("message-input");
+
+function nowLabel() {
+    return new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+function clearEmptyState() {
+    const empty = messages.querySelector(".messages-empty");
+    if (empty) empty.remove();
+}
+
+function addMessage(sender, message, time) {
+    clearEmptyState();
+
+    const row = document.createElement("div");
+    row.className = "message-row" + (sender === currentUser ? " mine" : "");
+
+    const bubble = document.createElement("div");
+    bubble.className = "message-bubble";
+
+    const text = document.createElement("span");
+    text.className = "message-text";
+    text.textContent = message;
+
+    const meta = document.createElement("span");
+    meta.className = "message-meta";
+    meta.textContent = time || nowLabel();
+
+    bubble.appendChild(text);
+    bubble.appendChild(meta);
+    row.appendChild(bubble);
+    messages.appendChild(row);
+
+    messages.scrollTop = messages.scrollHeight;
+}
+
+form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const text = input.value.trim();
+    if (!text) return;
+
+    const sendBtn = form.querySelector("button");
+    sendBtn.disabled = true;
+
+    try {
+        const formData = new FormData();
+        formData.append("message", text);
+
+        const response = await fetch(
+            "{{ url_for('chat.send_message', username=other_user) }}",
+            { method: "POST", body: formData }
+        );
+
+        if (response.ok) {
+            input.value = "";
+        } else {
+            const data = await response.json().catch(() => ({}));
+            alert(data.error || "Message failed to send. Please try again.");
+        }
+    } catch (err) {
+        alert("Network error — message not sent.");
+    } finally {
+        sendBtn.disabled = false;
+        input.focus();
+    }
+});
+
+socket.on("new_message", (data) => {
+    const isThisChat =
+        (data.sender === currentUser && data.receiver === otherUser) ||
+        (data.sender === otherUser && data.receiver === currentUser);
+
+    if (isThisChat) {
+        addMessage(data.sender, data.message, data.time);
+    }
+});
+
+window.addEventListener("load", () => {
+    messages.scrollTop = messages.scrollHeight;
+    input.focus();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Chats · ChatHub{% endblock %}
+
+{% block content %}
+<div class="app-shell">
+    <div class="sidebar-backdrop"></div>
+    <aside class="sidebar">
+        <div class="sidebar-top">
+            <div class="brand">ChatHub</div>
+            <a class="logout" href="{{ url_for('chat.logout') }}">Logout</a>
+        </div>
+
+        <div class="profile">
+            <div class="avatar">{{ user[0]|upper }}</div>
+            <div>
+                <strong>{{ user }}</strong>
+                <span>Online</span>
+            </div>
+        </div>
+
+        <div class="section-label">CHATS</div>
+
+        <div class="user-list">
+            {% for contact in contacts %}
+            <a href="{{ url_for('chat.chat_page', username=contact.username) }}" class="user-row">
+                <div class="avatar small presence {{ 'is-online' if contact.online else 'is-offline' }}" data-username="{{ contact.username }}">
+                    {{ contact.username[0]|upper }}
+                    <span class="presence-dot"></span>
+                </div>
+                <div class="user-info">
+                    <div class="user-info-top">
+                        <strong>{{ contact.username }}</strong>
+                        <span class="user-time">{{ contact.time }}</span>
+                    </div>
+                    <span class="user-preview">{{ contact.preview }}</span>
+                </div>
+            </a>
+            {% else %}
+            <div class="empty-users">
+                <strong>No conversations yet</strong>
+                <span>Open another browser window, create another user, and start chatting.</span>
+            </div>
+            {% endfor %}
+        </div>
+    </aside>
+
+    <main class="empty-chat">
+        <button class="menu-toggle" aria-label="Open conversations">&#9776;</button>
+        <div class="empty-icon">C</div>
+        <h2>Your conversations</h2>
+        <p>Select a person from the left to start chatting.</p>
+    </main>
+</div>
+{% endblock %}
