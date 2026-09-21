@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ChatHub — Real-Time Secure Chat
 
 A Flask chat application using the concepts learned so far, plus Flask-SocketIO for real-time messaging.
@@ -82,3 +83,6 @@ Browser ←→ Socket connection ←→ Flask
 ```
 
 The message is also saved to SQLite so it is still available after reopening the chat.
+=======
+# Mini-Project
+>>>>>>> ffc535c1d56c161c978db0fa8087b76cd1179c12
