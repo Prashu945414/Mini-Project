@@ -56,7 +56,7 @@
 
         <section class="messages" id="messages">
             {% for msg in messages %}
-            <div class="message-row {% if msg.sender == user %}mine{% endif %}">
+            <div class="message-row {% if msg.sender == user %}mine{% endif %}" data-message-id="{{ msg.id }}">
                 <div class="message-bubble">
                     <span class="message-text">{{ msg.message }}</span>
                     <span class="message-meta">{{ msg.time }}</span>
@@ -96,11 +96,12 @@ function clearEmptyState() {
     if (empty) empty.remove();
 }
 
-function addMessage(sender, message, time) {
+function addMessage(sender, message, time, messageId) {
     clearEmptyState();
 
     const row = document.createElement("div");
     row.className = "message-row" + (sender === currentUser ? " mine" : "");
+    row.dataset.messageId = messageId;
 
     const bubble = document.createElement("div");
     bubble.className = "message-bubble";
@@ -116,7 +117,9 @@ function addMessage(sender, message, time) {
     bubble.appendChild(text);
     bubble.appendChild(meta);
     row.appendChild(bubble);
-    messages.appendChild(row);
+    const nextRow = [...messages.querySelectorAll(".message-row[data-message-id]")]
+        .find((existing) => Number(existing.dataset.messageId) > Number(messageId));
+    messages.insertBefore(row, nextRow || null);
 
     messages.scrollTop = messages.scrollHeight;
 }
@@ -159,7 +162,7 @@ socket.on("new_message", (data) => {
         (data.sender === otherUser && data.receiver === currentUser);
 
     if (isThisChat) {
-        addMessage(data.sender, data.message, data.time);
+        addMessage(data.sender, data.message, data.time, data.id);
     }
 });
 

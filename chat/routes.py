@@ -121,11 +121,14 @@ def chat_page(username):
     messages = Message.query.filter(
         ((Message.sender == current_user) & (Message.receiver == username))
         | ((Message.sender == username) & (Message.receiver == current_user))
-    ).order_by(Message.timestamp).all()
+    # Timestamps can be identical for messages sent within the same second.
+    # Use the database id as a stable tie-breaker so both sides see the same order.
+    ).order_by(Message.timestamp, Message.id).all()
 
     chat_messages = []
     for msg in messages:
         chat_messages.append({
+            "id": msg.id,
             "sender": msg.sender,
             "message": cipher.decrypt(msg.message.encode()).decode(),
             "time": format_time(msg.timestamp),
@@ -173,6 +176,7 @@ def send_message(username):
             "sender": current_user,
             "receiver": username,
             "message": text,
+            "id": new_message.id,
             "time": format_time(new_message.timestamp),
         },
         room=f"chat_{min(current_user, username)}_{max(current_user, username)}"
