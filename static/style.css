@@ -235,6 +235,28 @@ input { font-family: inherit; }
     text-overflow: ellipsis;
 }
 
+.user-row.has-unread .user-info-top strong,
+.user-row.has-unread .user-preview {
+    color: var(--mint);
+    font-weight: 700;
+}
+
+.unread-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 19px;
+    height: 19px;
+    margin-top: 5px;
+    padding: 0 6px;
+    border-radius: 10px;
+    background: var(--mint);
+    color: #10211e;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+}
+
 .empty-users {
     padding: 20px 14px;
     color: var(--text-muted);

@@ -3,7 +3,7 @@ from flask_socketio import join_room
 from cryptography.fernet import Fernet
 
 from extensions import db, socketio
-from chat.models import User, Message
+from chat.models import User, Message, ConversationRead
 
 chat = Blueprint("chat", __name__)
 
@@ -36,6 +36,42 @@ def get_last_message(user_a, user_b):
     )
 
 
+def get_unread_count(username, contact_username):
+    read_state = ConversationRead.query.filter_by(
+        username=username,
+        contact_username=contact_username,
+    ).first()
+    last_read_id = read_state.last_read_message_id if read_state else 0
+
+    return Message.query.filter(
+        Message.sender == contact_username,
+        Message.receiver == username,
+        Message.id > last_read_id,
+    ).count()
+
+
+def mark_conversation_read(username, contact_username, through_message_id):
+    read_state = ConversationRead.query.filter_by(
+        username=username,
+        contact_username=contact_username,
+    ).first()
+
+    if read_state is None:
+        read_state = ConversationRead(
+            username=username,
+            contact_username=contact_username,
+            last_read_message_id=through_message_id,
+        )
+        db.session.add(read_state)
+    else:
+        read_state.last_read_message_id = max(
+            read_state.last_read_message_id,
+            through_message_id,
+        )
+
+    db.session.commit()
+
+
 def build_contact_list(current_user):
     """Sidebar data: every other registered user, plus a preview of the
     last message between them and the current user (if any), plus whether
@@ -57,6 +93,7 @@ def build_contact_list(current_user):
             "preview": preview,
             "time": last_time,
             "online": u.username in online_users,
+            "unread_count": get_unread_count(current_user, u.username),
         })
 
     return contacts
@@ -122,6 +159,18 @@ def chat_page(username):
         flash(f'No user named "{username}" found.')
         return redirect(url_for("chat.home"))
 
+    received_message = Message.query.filter_by(
+        sender=username,
+        receiver=current_user,
+    ).order_by(Message.id.desc()).first()
+    if received_message:
+        mark_conversation_read(current_user, username, received_message.id)
+        socketio.emit(
+            "conversation_read",
+            {"contact_username": username},
+            room=f"user_{current_user}",
+        )
+
     messages = Message.query.filter(
         ((Message.sender == current_user) & (Message.receiver == username))
         | ((Message.sender == username) & (Message.receiver == current_user))
@@ -170,7 +219,7 @@ def send_message(username):
     db.session.add(new_message)
     db.session.commit()
 
-    # Send the decrypted message only to the two connected users.
+    # Deliver the message to the open chat and notify the recipient's tabs.
     socketio.emit(
         "new_message",
         {
@@ -178,8 +227,19 @@ def send_message(username):
             "receiver": username,
             "message": text,
             "time": format_time(new_message.timestamp),
+            "message_id": new_message.id,
         },
         room=f"chat_{min(current_user, username)}_{max(current_user, username)}"
+    )
+    socketio.emit(
+        "message_notification",
+        {
+            "sender": current_user,
+            "message": text,
+            "time": format_time(new_message.timestamp),
+            "message_id": new_message.id,
+        },
+        room=f"user_{username}",
     )
 
     return {"success": True}
@@ -189,6 +249,7 @@ def send_message(username):
 def handle_connect():
     user = session.get("user")
     if user:
+        join_room(f"user_{user}")
         online_users.add(user)
         socketio.emit("presence_update", {"online_users": list(online_users)})
 
@@ -211,3 +272,32 @@ def join_chat(data):
 
     room = f"chat_{min(user, other_user)}_{max(user, other_user)}"
     join_room(room)
+
+
+@socketio.on("mark_chat_read")
+def handle_mark_chat_read(data):
+    if not isinstance(data, dict):
+        return
+
+    user = session.get("user")
+    other_user = data.get("other_user")
+    message_id = data.get("message_id")
+
+    if not user or not isinstance(other_user, str) or not isinstance(message_id, int):
+        return
+
+    received_message = Message.query.filter(
+        Message.id <= message_id,
+        Message.sender == other_user,
+        Message.receiver == user,
+    ).order_by(Message.id.desc()).first()
+
+    if not received_message:
+        return
+
+    mark_conversation_read(user, other_user, received_message.id)
+    socketio.emit(
+        "conversation_read",
+        {"contact_username": other_user},
+        room=f"user_{user}",
+    )

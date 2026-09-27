@@ -15,3 +15,13 @@ class Message(db.Model):
     message = db.Column(db.Text, nullable=False)
     # Added so messages can show a real "sent at" time instead of nothing.
     timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+
+class ConversationRead(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), nullable=False)
+    contact_username = db.Column(db.String(100), nullable=False)
+    last_read_message_id = db.Column(db.Integer, nullable=False, default=0)
+    __table_args__ = (
+        db.UniqueConstraint("username", "contact_username"),
+    )

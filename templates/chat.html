@@ -24,7 +24,9 @@
         <div class="user-list">
             {% for contact in contacts %}
             <a href="{{ url_for('chat.chat_page', username=contact.username) }}"
-               class="user-row {% if contact.username == other_user %}active{% endif %}">
+               class="user-row {% if contact.username == other_user %}active{% endif %} {% if contact.unread_count %}has-unread{% endif %}"
+               data-contact-username="{{ contact.username }}"
+               data-unread-count="{{ contact.unread_count }}">
                 <div class="avatar small presence {{ 'is-online' if contact.online else 'is-offline' }}" data-username="{{ contact.username }}">
                     {{ contact.username[0]|upper }}
                     <span class="presence-dot"></span>
@@ -35,6 +37,9 @@
                         <span class="user-time">{{ contact.time }}</span>
                     </div>
                     <span class="user-preview">{{ contact.preview }}</span>
+                    {% if contact.unread_count %}
+                    <span class="unread-badge" aria-label="{{ contact.unread_count }} unread messages">{{ contact.unread_count if contact.unread_count < 100 else '99+' }}</span>
+                    {% endif %}
                 </div>
             </a>
             {% endfor %}
@@ -80,6 +85,7 @@
 const socket = window.chatSocket;
 const currentUser = {{ user|tojson }};
 const otherUser = {{ other_user|tojson }};
+document.querySelector(".chat-panel").dataset.chatWith = otherUser;
 
 socket.emit("join_chat", { other_user: otherUser });
 

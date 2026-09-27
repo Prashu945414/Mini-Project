@@ -9,6 +9,7 @@ A Flask chat application using the concepts learned so far, plus Flask-SocketIO 
 - Flask sessions
 - One-to-one chat
 - Real-time messages without page refresh
+- Unread message counts in the conversation list
 - SQLite message storage
 - Fernet encrypted message storage
 - Flask-SQLAlchemy
