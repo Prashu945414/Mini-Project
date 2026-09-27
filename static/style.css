@@ -508,6 +508,29 @@ input { font-family: inherit; }
     position: relative;
 }
 
+.previous-login {
+    margin: 10px 0 0;
+    color: var(--text-faint);
+    font-size: 12px;
+    position: relative;
+}
+
+.login-card .previous-login-button {
+    width: auto;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    color: var(--accent);
+    font: inherit;
+    box-shadow: none;
+    cursor: pointer;
+}
+
+.login-card .previous-login-button:hover {
+    transform: none;
+    text-decoration: underline;
+}
+
 .flash-toast {
     position: fixed;
     top: 22px;
