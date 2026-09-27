@@ -11,12 +11,29 @@
         <p class="subtitle">Simple real-time messaging with encrypted message storage.</p>
 
         <form method="POST">
-            <label>Username</label>
-            <input type="text" name="username" placeholder="Enter your username" autocomplete="off" maxlength="24" required>
+            <label for="username">Username</label>
+            <input id="username" type="text" name="username" placeholder="Enter your username" autocomplete="username" maxlength="24" required>
+            {% if previous_username %}
+            <p class="previous-login">
+                Previously used:
+                <button class="previous-login-button" type="button" data-username="{{ previous_username }}">{{ previous_username }}</button>
+            </p>
+            {% endif %}
             <button type="submit">Continue</button>
         </form>
 
         <p class="security-note">Messages are encrypted before they are stored.</p>
     </div>
 </div>
+{% if previous_username %}
+<script>
+    const usernameInput = document.getElementById("username");
+    const previousUsernameButton = document.querySelector(".previous-login-button");
+
+    previousUsernameButton.addEventListener("click", () => {
+        usernameInput.value = previousUsernameButton.dataset.username;
+        usernameInput.focus();
+    });
+</script>
+{% endif %}
 {% endblock %}
