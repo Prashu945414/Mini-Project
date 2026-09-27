@@ -5,6 +5,7 @@ A Flask chat application using the concepts learned so far, plus Flask-SocketIO 
 ## Features
 
 - Username login
+- Previous username suggestion after logout
 - Flask sessions
 - One-to-one chat
 - Real-time messages without page refresh

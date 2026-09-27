@@ -92,9 +92,13 @@ def login():
             db.session.commit()
 
         session["user"] = username
+        session["last_username"] = username
         return redirect(url_for("chat.home"))
 
-    return render_template("login.html")
+    return render_template(
+        "login.html",
+        previous_username=session.get("last_username"),
+    )
 
 
 @chat.route("/logout")
